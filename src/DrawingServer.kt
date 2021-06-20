@@ -1,5 +1,7 @@
-package com.mayurg.data
+package com.mayurg
 
+import com.mayurg.data.Player
+import com.mayurg.data.Room
 import java.util.concurrent.ConcurrentHashMap
 
 class DrawingServer {

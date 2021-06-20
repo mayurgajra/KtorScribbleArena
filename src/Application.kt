@@ -1,5 +1,6 @@
 package com.mayurg
 
+import com.mayurg.routes.createRoomRoute
 import com.mayurg.session.DrawingSession
 import io.ktor.application.*
 import io.ktor.response.*
@@ -17,6 +18,8 @@ import java.time.*
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
+val server = DrawingServer()
+
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
 fun Application.module(testing: Boolean = false) {
@@ -33,9 +36,10 @@ fun Application.module(testing: Boolean = false) {
         gson {
         }
     }
-
     install(CallLogging)
-
     install(WebSockets)
+    install(Routing){
+        createRoomRoute()
+    }
 }
 
