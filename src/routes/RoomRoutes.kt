@@ -3,6 +3,7 @@ package com.mayurg.routes
 import com.mayurg.data.Room
 import com.mayurg.data.models.BasicApiResponse
 import com.mayurg.data.models.CreateRoomRequest
+import com.mayurg.data.models.RoomResponse
 import com.mayurg.other.Constants.MAX_ROOM_SIZE
 import com.mayurg.server
 import io.ktor.application.*
@@ -41,6 +42,25 @@ fun Route.createRoomRoute() {
             println("Room created: ${roomRequest.name}")
             call.respond(OK, BasicApiResponse(true))
 
+        }
+    }
+}
+
+fun Route.getRoomsRoute() {
+    route("/api/getRooms"){
+        get {
+            val searchQuery = call.parameters["searchQuery"]
+            if (searchQuery == null){
+                call.respond(BadRequest)
+                return@get
+            }
+
+            val roomsResult = server.rooms.filterKeys { it.contains(searchQuery,true) }
+            val roomResponse = roomsResult.values.map {
+                RoomResponse(it.name,it.maxPlayers,it.players.size)
+            }.sortedBy { it.name }
+
+            call.respond(OK,roomResponse)
         }
     }
 }
