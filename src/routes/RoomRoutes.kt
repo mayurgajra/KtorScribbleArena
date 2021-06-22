@@ -47,20 +47,48 @@ fun Route.createRoomRoute() {
 }
 
 fun Route.getRoomsRoute() {
-    route("/api/getRooms"){
+    route("/api/getRooms") {
         get {
             val searchQuery = call.parameters["searchQuery"]
-            if (searchQuery == null){
+            if (searchQuery == null) {
                 call.respond(BadRequest)
                 return@get
             }
 
-            val roomsResult = server.rooms.filterKeys { it.contains(searchQuery,true) }
+            val roomsResult = server.rooms.filterKeys { it.contains(searchQuery, true) }
             val roomResponse = roomsResult.values.map {
-                RoomResponse(it.name,it.maxPlayers,it.players.size)
+                RoomResponse(it.name, it.maxPlayers, it.players.size)
             }.sortedBy { it.name }
 
-            call.respond(OK,roomResponse)
+            call.respond(OK, roomResponse)
+        }
+    }
+}
+
+fun Route.joinRoomRoute() {
+    route("/api/joinRoom") {
+        get {
+            val username = call.parameters["username"]
+            val roomName = call.parameters["roomName"]
+            if (username == null || roomName == null) {
+                call.respond(BadRequest)
+                return@get
+            }
+            val room = server.rooms[roomName]
+            when {
+                room == null -> {
+                    call.respond(OK, BasicApiResponse(false, "Room not found"))
+                }
+                room.containsPlayer(username) -> {
+                    call.respond(OK, BasicApiResponse(false, "A player with this username already joined"))
+                }
+                room.players.size >= room.maxPlayers -> {
+                    call.respond(OK, BasicApiResponse(false, "This room is already full"))
+                }
+                else -> {
+                    call.respond(OK,BasicApiResponse(true))
+                }
+            }
         }
     }
 }

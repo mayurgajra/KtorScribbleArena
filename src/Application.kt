@@ -2,6 +2,7 @@ package com.mayurg
 
 import com.mayurg.routes.createRoomRoute
 import com.mayurg.routes.getRoomsRoute
+import com.mayurg.routes.joinRoomRoute
 import com.mayurg.session.DrawingSession
 import io.ktor.application.*
 import io.ktor.response.*
@@ -42,6 +43,7 @@ fun Application.module(testing: Boolean = false) {
     install(Routing){
         createRoomRoute()
         getRoomsRoute()
+        joinRoomRoute()
     }
 }
 
