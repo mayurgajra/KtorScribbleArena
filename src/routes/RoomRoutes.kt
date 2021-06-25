@@ -7,7 +7,6 @@ import com.mayurg.data.models.RoomResponse
 import com.mayurg.other.Constants.MAX_ROOM_SIZE
 import com.mayurg.server
 import io.ktor.application.*
-import io.ktor.http.*
 import io.ktor.http.HttpStatusCode.Companion.BadRequest
 import io.ktor.http.HttpStatusCode.Companion.OK
 import io.ktor.request.*
