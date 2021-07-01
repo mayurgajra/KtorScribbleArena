@@ -1,13 +1,14 @@
 package com.mayurg.routes
 
 import com.google.gson.JsonParser
+import com.mayurg.data.Player
 import com.mayurg.data.Room
-import com.mayurg.data.models.BaseModel
-import com.mayurg.data.models.ChatMessage
-import com.mayurg.data.models.DrawData
+import com.mayurg.data.models.*
 import com.mayurg.gson
+import com.mayurg.other.Constants.TYPE_ANNOUNCEMENT
 import com.mayurg.other.Constants.TYPE_CHAT_MESSAGE
 import com.mayurg.other.Constants.TYPE_DRAW_DATA
+import com.mayurg.other.Constants.TYPE_JOIN_ROOM_HANDSHAKE
 import com.mayurg.server
 import com.mayurg.session.DrawingSession
 import io.ktor.http.cio.websocket.*
@@ -21,6 +22,24 @@ fun Route.gameWebSocketRoute(){
     route("/ws/draw"){
        standardWebSocket { socket, clientId, message, payload ->
            when(payload){
+               is JoinRoomHandshake -> {
+                   val room = server.rooms[payload.roomName]
+                   if (room == null){
+                       val gameError = GameError(GameError.ERROR_ROOM_NOT_FOUND)
+                       socket.send(Frame.Text(gson.toJson(gameError)))
+                       return@standardWebSocket
+                   }
+
+                   val player = Player(
+                       payload.username,
+                       socket,
+                       payload.clientId
+                   )
+                   server.playerJoined(player)
+                   if (!room.containsPlayer(player.username)){
+                       room.addPlayer(player.clientId,player.username,socket)
+                   }
+               }
                is DrawData -> {
                    val room = server.rooms[payload.roomName] ?: return@standardWebSocket
                    if (room.phase == Room.Phase.GAME_RUNNING){
@@ -58,6 +77,8 @@ fun Route.standardWebSocket(
                     val type = when(jsonObject.get("type").asString){
                         TYPE_CHAT_MESSAGE -> ChatMessage::class.java
                         TYPE_DRAW_DATA -> DrawData::class.java
+                        TYPE_ANNOUNCEMENT -> Announcement::class.java
+                        TYPE_JOIN_ROOM_HANDSHAKE -> JoinRoomHandshake::class.java
                         else -> BaseModel::class.java
                     }
                     val payload = gson.fromJson(message,type)

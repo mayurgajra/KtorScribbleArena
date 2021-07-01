@@ -2,6 +2,7 @@ package com.mayurg
 
 import com.google.gson.Gson
 import com.mayurg.routes.createRoomRoute
+import com.mayurg.routes.gameWebSocketRoute
 import com.mayurg.routes.getRoomsRoute
 import com.mayurg.routes.joinRoomRoute
 import com.mayurg.session.DrawingSession
@@ -40,6 +41,7 @@ fun Application.module(testing: Boolean = false) {
         createRoomRoute()
         getRoomsRoute()
         joinRoomRoute()
+        gameWebSocketRoute()
     }
 }
 
