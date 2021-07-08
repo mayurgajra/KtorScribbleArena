@@ -2,8 +2,11 @@ package com.mayurg.data
 
 import com.mayurg.data.models.Announcement
 import com.mayurg.data.models.ChosenWord
+import com.mayurg.data.models.GameState
 import com.mayurg.data.models.PhaseChange
 import com.mayurg.gson
+import com.mayurg.other.transformToUnderscores
+import com.mayurg.other.words
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.*
 
@@ -17,6 +20,7 @@ class Room(
     private var drawingPlayer: Player? = null
     private var winningPlayers = listOf<String>()
     private var word: String? = null
+    private var curWords: List<String>? = null
 
     private var phaseChangedListener: ((Phase) -> Unit)? = null
     var phase = Phase.WAITING_FOR_PLAYERS
@@ -116,7 +120,7 @@ class Room(
         return players.find { it.username == username } != null
     }
 
-    fun setWordAndSwitchToGameRunning(word: String){
+    fun setWordAndSwitchToGameRunning(word: String) {
         this.word = word
         phase = Phase.GAME_RUNNING
 
@@ -148,18 +152,34 @@ class Room(
     }
 
     private fun gameRunning() {
+        winningPlayers = listOf()
+        val wordToSend = word ?: curWords?.random() ?: words.random()
+        val wordWithUnderscores = wordToSend.transformToUnderscores()
+        val drawingUsername = (drawingPlayer ?: players.random()).username
+        val gameStateForDrawingPlayer = GameState(drawingUsername, wordToSend)
+        val gameStateForGuessingPlayers = GameState(drawingUsername, wordWithUnderscores)
+
+        GlobalScope.launch {
+            broadcastToAllExcept(
+                gson.toJson(gameStateForGuessingPlayers),
+                drawingPlayer?.clientId ?: players.random().clientId
+            )
+            drawingPlayer?.socket?.send(Frame.Text(gson.toJson(gameStateForDrawingPlayer)))
+
+            timeAndNotify(DELAY_GAME_RUNNING_TO_SHOW_WORD)
+        }
 
     }
 
     private fun showWord() {
         GlobalScope.launch {
-            if (winningPlayers.isEmpty()){
+            if (winningPlayers.isEmpty()) {
                 drawingPlayer?.let {
                     it.score -= PENALTY_NOBODY_GUESSED_IT
                 }
             }
             word?.let {
-                val chosenWord = ChosenWord(it,name)
+                val chosenWord = ChosenWord(it, name)
                 broadcast(gson.toJson(chosenWord))
             }
             timeAndNotify(DELAY_SHOW_WORD_TO_NEW_ROUND)
