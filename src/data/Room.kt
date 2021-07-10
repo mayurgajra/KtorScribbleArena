@@ -1,10 +1,8 @@
 package com.mayurg.data
 
-import com.mayurg.data.models.Announcement
-import com.mayurg.data.models.ChosenWord
-import com.mayurg.data.models.GameState
-import com.mayurg.data.models.PhaseChange
+import com.mayurg.data.models.*
 import com.mayurg.gson
+import com.mayurg.other.getRandomWords
 import com.mayurg.other.transformToUnderscores
 import com.mayurg.other.words
 import io.ktor.http.cio.websocket.*
@@ -16,6 +14,7 @@ class Room(
     var players: List<Player> = listOf()
 ) {
 
+    private var drawingPlayerIndex = 0
     private var timerJob: Job? = null
     private var drawingPlayer: Player? = null
     private var winningPlayers = listOf<String>()
@@ -148,7 +147,13 @@ class Room(
     }
 
     private fun newRound() {
-
+        curWords = getRandomWords(3)
+        val newWords = NewWords(curWords!!)
+        nextDrawingPlayer()
+        GlobalScope.launch {
+            drawingPlayer?.socket?.send(Frame.Text(gson.toJson(newWords)))
+            timeAndNotify(DELAY_NEW_ROUND_TO_GAME_RUNNING)
+        }
     }
 
     private fun gameRunning() {
@@ -186,6 +191,21 @@ class Room(
             val phaseChange = PhaseChange(Phase.SHOW_WORD, DELAY_SHOW_WORD_TO_NEW_ROUND)
             broadcast(gson.toJson(phaseChange))
         }
+    }
+
+    private fun nextDrawingPlayer() {
+        drawingPlayer?.isDrawing = false
+
+        if (players.isEmpty()) return
+
+        drawingPlayer = if (drawingPlayerIndex <= players.size - 1) {
+            players[drawingPlayerIndex]
+        } else players.last()
+
+        if (drawingPlayerIndex < players.size - 1) drawingPlayerIndex++
+        else drawingPlayerIndex = 0
+
+
     }
 
     enum class Phase {
