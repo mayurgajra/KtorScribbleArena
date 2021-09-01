@@ -392,6 +392,8 @@ class Room(
         if (drawingPlayerIndex < players.size - 1) drawingPlayerIndex++
         else drawingPlayerIndex = 0
 
+        drawingPlayer?.isDrawing = true
+
 
     }
 
